@@ -1,10 +1,13 @@
 # Informacje o projekcie.
 
 Autor: Michał Horodecki
+
 Data: Czerwiec 2019
+
 Projekt jest prezentacją w ramach Regionalnego Programu Stypendialnego 2018 / 2019
 
 Tytuł: Rakiety Genetyczne
+
 Cel: Przedstawienie algorytmu genetycznego na przykładzie ewoluujących rakiet
 
 ## Środowisko
