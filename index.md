@@ -8,4 +8,4 @@ Tytuł: Rakiety Genetyczne
 Cel: Przedstawienie algorytmu genetycznego na przykładzie ewoluujących rakiet
 
 ## Środowisko
-Projekt wykonany został w języku (Python 3.7.0)[python.org] z użyciem biblioteki (PyGame)[pygame.org], którą można zainstalować poleceniem: `pip install pygame` w konsoli systemowej.
+Projekt wykonany został w języku [Python 3.7.0](python.org) z użyciem biblioteki [PyGame](pygame.org), którą można zainstalować poleceniem: `pip install pygame` w konsoli systemowej.
