@@ -60,8 +60,6 @@ from pygame.locals import *
 Następnie stwórzmy klasy, które chcemy używać:
 
 ```python
-
-
 class Genes:
   '''Klasa odpowiedzialna za zarządanie genami'''
   pass
