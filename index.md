@@ -100,6 +100,8 @@ self.genes = [self.randGene() for _ in range(size)]
 Powyższa składnia może wyglądać nieco dziwnie dla osób nieobeznanych z Pythonem.
 Jest to skrócony zapis wygenerowania tablicy za pomocą danej funkcji.
 
+Słowo kluczowe `self` informuje, że odnosimy się do własności pojedynczego obiektu.
+
 Nasza tablica ma zawierać losowe geny, zatem tworzymy odpowiednią funkcję.
 Funkcja `random.random()` zwróci wartość z zakresu `[0, 1]`
 
@@ -133,5 +135,94 @@ MUTATION_CHANCE = 0.001 #Szansa na mutację genu
 MUTATION_FORCE = 0.01 #Współczynnik zmiany
 ```
 
+Klasa genów jest na ten moment gotowa, przejdźmy zatem do ich obsługi, czyli zaprogramujmy naszą rakietę.
+Zastanówmy się, jakie własności chcemy jej nadać.
 
+Potrzebujemy czasu działania, który jest jednocześnie długością genomu.
+Oczywiście, rakieta musi wiedzieć skąd dokąd ma latać, chcemy zatem podać pozycję startową i końcową.
+Ponadto, aby mierzyć odległość potrzebujemy mapy. 
+Ostatnią rzeczą podaną do konstruktora będzie zestaw genów rakiety.
+
+Podczas działania będziemy chcieli znać obecny czas, a także obrót oraz wektor reprezentujący zwrot lotu.
+
+Nasz konstruktor będzie wyglądał zatem tak:
+
+```python
+def __init__(self, lifetime, start, end, map, genes):
+  '''
+  lifetime - czas działania
+  start - pozycja startowa
+  end - cel
+  map - mapa pozwalająca na obliczenie odległości
+  genes - geny dla tej rakiety
+  '''
+  self.lifetime = lifetime
+  self.currentTime = 0
+  #Pozycja będzie sie zmieniać, dlatego chcemy skopiować wartości. Inaczej wszystkie rakiety miałyby tę samą pozycję
+  self.position = [start[0], start[1]]
+  self.target = end
+  self.map = map
+  self.genes = genes
+  
+  #Domyślnie rakieta skierowana jest do góry
+  self.forward = [0, -1]
+  self.rotation = 0 #Kąt w radianach
+```
+
+Przejdźmy dalej, do zdefiniowania czynności w każdym kroku.
+Na ten moment, chcemy jedynie obrócić rakietę o i-ty kąt, przesunąć się do przodu i przejść do następnego kroku.
+
+```python
+def update(self):
+  self.rotate(self.geneToAngle(self.genes.genes[self.currentTime]))
+  self.move()
+  self.currentTime += 1
+```
+Oczywiście funkcje `rotate`, `geneToAngle` oraz `move` musimy także zdefiniować:
+
+```python
+def move(self):
+  '''Przesuń rakietę o wektor'''
+  self.position[0] += self.forward[0]
+  self.position[1] += self.forward[1]
+  
+def geneToAngle(self, geneValue):
+  '''Zamień wartość genu [0,1] na wartość kąta [-0.5, 0.5]. (W radianach)
+     Dzięki temu rakieta może się obracać w lewo i w prawo, a ruch jest nieco mniej chaotyczny.'''
+  return 0.5 * (geneValue * 2 - 1)
+  
+def rotate(self, angle):
+  '''Obróć rakietę o kąt podany w radianach'''
+  x, y = self.forward
+  #Używamy tutaj macierzy obrotu
+  self.forward[0] = x * math.cos(angle) - y * math.sin(angle)
+  self.forward[1] = x * math.sin(angle) + y * math.cos(angle)
+  self.rotaion -= angle #Ponieważ obracamy się przeciwnie do wskazówek zegara, to odejmujemy wartość zmiany
+```
+
+Aby móc obserwować nasze rakiety i wyświetlić je na ekranie, zdefiniujmy jeszcze funckję `draw`, która na podanym oknie narysuje rakietę.
+
+```python
+def draw(self, window):
+  #Stwórz prostokąt i wypełnij go kolorem
+  rocketSurface = pygame.Surface(ROCKET_SIZE, pygame.SRCALPHA)
+  rocketSurface.fill(ROCKET_COLOR)
+  
+  rotationDegrees = self.rotation * (180 / math.pi) #Pygame przyjmuje wartość kąta w stopniach
+  rotatedRocket = pygame.transform.rotate(rocketSurface, rotationDegrees)
+  
+  drawPosition = [self.position[0], self.position[1]]
+  #Wyśrodkowanie
+  drawPosition[0] -= rotatedRocket.get_width() / 2
+  drawPosition[1] -= rotatedRocket.get_height() / 2
+  
+  window.blit(rotatedRocket, drawPosition)
+```
+
+Dodajmy nowe stałe na górze programu. Rozmiar i kolor ustalamy dowolnie, dla estetyki.
+```python
+#Kolor i rozmiar rakiety
+ROCKET_SIZE = (5, 15)
+ROCKET_COLOR = (50, 250, 90, 128)
+```
 
