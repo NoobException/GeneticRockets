@@ -4,13 +4,13 @@ Autor: Michał Horodecki
 
 Data: Czerwiec 2019
 
-Projekt jest prezentacją w ramach Regionalnego Programu Stypendialnego 2018 / 2019
+Projekt jest pracą w ramach Regionalnego Programu Stypendialnego 2018 / 2019
 
-Tytuł: Rakiety Genetyczne
+Tytuł Projektu: Rakiety Genetyczne
 
 Cel: Przedstawienie algorytmu genetycznego na przykładzie ewoluujących rakiet
 
-## Algorytmy Genetyczne
+## O algorytmach genetycznych.
 
 ### Czym są?
 
@@ -35,7 +35,7 @@ Opiera się na stworzeniu pewnej populacji rozwiązań, a następnie na zasadach
 
 1. Mamy dany zbiór rakiet o pewnym czasie działania. Ich celem jest dotarcie do pewnego celu.
 2. Rakiety posiadaja silniki sterujące, umożliwiające obrót o dowolny kąt.
-3. Geny rakiety reprezentują wartość kąta obrotu
+3. Każda rakieta posiada geny, które reprezentują wartość kąta obrotu
 4. W i-tym kroku rakieta obraca się o wartość i-tego genu a następnie przesuwa się w przód.
 5. Oceniamy rakietę na podstawie jej odległości do celu.
 
@@ -46,8 +46,17 @@ Projekt wykonany został w języku [Python 3.7.0](python.org) z użyciem bibliot
 
 
 ### Pierwsze linie kodu
+W pracy będę zakładał, że Czytelnik posiada podstawową znajomość programowania w języku Python. 
+Znajomość biblioteki PyGame nie jest wymagana.
 
-Zaczniemy od załączenia odpowiednich bibliotek, które będą nam potrzebne.
+Na samej górze programu dodajmy poniższe linie:
+```python3
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+```
+Pozwolą one na pracę z kodowaniem UTF-8
+
+Kod programu zaczniemy od załączenia odpowiednich bibliotek, które będą nam potrzebne.
 Oprócz biblioteki graficznej, użyjemy także generatora liczb pseudolosowych.
 
 ```python
@@ -82,12 +91,14 @@ class Application:
  
 ```
 
+### Geny
 Geny zdają się być najbardziej podstawową rzeczą, dlatego od nich zacznijmy.
 Chcemy, aby geny były losową tablicą pewnej liczby liczb rzeczywistych.
 
 ```python
 def __init__(self, size):
   self.size = size
+  #Tworzymy tablicę losowych genów
   self.genes = [self.randGene() for _ in range(size)]
   
 def randGene(self):
@@ -97,16 +108,12 @@ def randGene(self):
 ```python
 self.genes = [self.randGene() for _ in range(size)]
 ```
-Powyższa składnia może wyglądać nieco dziwnie dla osób nieobeznanych z Pythonem.
-Jest to skrócony zapis wygenerowania tablicy za pomocą danej funkcji.
-
-Słowo kluczowe `self` informuje, że odnosimy się do własności pojedynczego obiektu.
 
 Nasza tablica ma zawierać losowe geny, zatem tworzymy odpowiednią funkcję.
 Funkcja `random.random()` zwróci wartość z zakresu `[0, 1]`
 
 Następnie stwórzmy funkcję, która łączy dwa zestawy genów w nowy.
-Geny definiują nam ścieżkę rakiety, dlatego wygodnie będzie, gdy nowa ścieżka będzie średnią rodziców.
+Geny definiują nam ścieżkę rakiety, dlatego wygodnie będzie, gdy nowa ścieżka będzie pomiędzy, a więc średnią rodziców.
 Po skrzyżowaniu, chcemy zastosować mutację - z pewnym prawdopodobieństwem zmienić geny z pewną siłą.
 
 ```python
@@ -125,7 +132,7 @@ Następnie stwórzmy funkcję mutacji:
 ```python
 def mutate(chance, force):
   for i in range(self.size):
-    if random.random() < chance:
+    if random.random() < chance:  
       self.genes[i] += random.random() * force
 ```
 
@@ -135,15 +142,16 @@ MUTATION_CHANCE = 0.001 #Szansa na mutację genu
 MUTATION_FORCE = 0.01 #Współczynnik zmiany
 ```
 
+### Rakieta
+
 Klasa genów jest na ten moment gotowa, przejdźmy zatem do ich obsługi, czyli zaprogramujmy naszą rakietę.
 Zastanówmy się, jakie własności chcemy jej nadać.
 
 Potrzebujemy czasu działania, który jest jednocześnie długością genomu.
-Oczywiście, rakieta musi wiedzieć skąd dokąd ma latać, chcemy zatem podać pozycję startową i końcową.
+Oczywiście, rakieta musi wiedzieć skąd dokąd ma latać, chcemy zatem podać pozycję startową i końcową, a także geny kontrolujące tor lotu.
 Ponadto, aby mierzyć odległość potrzebujemy mapy. 
-Ostatnią rzeczą podaną do konstruktora będzie zestaw genów rakiety.
-
 Podczas działania będziemy chcieli znać obecny czas, a także obrót oraz wektor reprezentujący zwrot lotu.
+Rakietę będziemy chcieli oceniać, będziemy więc potrzebowali funckji liczącej wynik na podstawie odległości.
 
 Nasz konstruktor będzie wyglądał zatem tak:
 
@@ -204,11 +212,14 @@ Aby móc obserwować nasze rakiety i wyświetlić je na ekranie, zdefiniujmy jes
 
 ```python
 def draw(self, window):
-  #Stwórz prostokąt i wypełnij go kolorem
+  '''Narysuj rakietę w podanym oknie"
+  #Utwórz nowy obszar o rozmiarze ROCKET_SIZE, z włączoną flagą przezroczystości
   rocketSurface = pygame.Surface(ROCKET_SIZE, pygame.SRCALPHA)
+  #Wypełniamy go kolorem rakiety
   rocketSurface.fill(ROCKET_COLOR)
   
   rotationDegrees = self.rotation * (180 / math.pi) #Pygame przyjmuje wartość kąta w stopniach
+  #Obróć obszar o kąt
   rotatedRocket = pygame.transform.rotate(rocketSurface, rotationDegrees)
   
   drawPosition = [self.position[0], self.position[1]]
@@ -216,6 +227,7 @@ def draw(self, window):
   drawPosition[0] -= rotatedRocket.get_width() / 2
   drawPosition[1] -= rotatedRocket.get_height() / 2
   
+  #Umieść obrócony obszar w podanym oknie
   window.blit(rotatedRocket, drawPosition)
 ```
 
@@ -226,3 +238,12 @@ ROCKET_SIZE = (5, 15)
 ROCKET_COLOR = (50, 250, 90, 128)
 ```
 
+Na koniec dodajmy prostą funkcję liczącą wynik rakiety
+```python
+def calculateFitness(self):
+  return 1 / self.map.getDistance(self.position)
+```
+Chcemy, żeby wynik był większy im bliżej celu rakieta się znajdzie, dlatego używamy funckji 1 / x.
+
+### Populacja
+Mając rakietę stwórzmy ich populację.
