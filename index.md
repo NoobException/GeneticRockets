@@ -212,7 +212,7 @@ Aby móc obserwować nasze rakiety i wyświetlić je na ekranie, zdefiniujmy jes
 
 ```python
 def draw(self, window):
-  '''Narysuj rakietę w podanym oknie"
+  '''Narysuj rakietę w podanym oknie'''
   #Utwórz nowy obszar o rozmiarze ROCKET_SIZE, z włączoną flagą przezroczystości
   rocketSurface = pygame.Surface(ROCKET_SIZE, pygame.SRCALPHA)
   #Wypełniamy go kolorem rakiety
@@ -247,3 +247,79 @@ Chcemy, żeby wynik był większy im bliżej celu rakieta się znajdzie, dlatego
 
 ### Populacja
 Mając rakietę stwórzmy ich populację.
+
+Chcemy, żeby na początku każda rakieta posiadała te same parametry, z wyjątkiem genów.
+Zatem populację zaczniemy od ustalenia ilości i paremetrów rakiet.
+
+```python
+def __init__(self, rocketCount, rocketLifetime, start, end, map):
+  '''
+    rocketCount - Ilość rakiet
+    rocketLifetime - Czas pracy rakiety
+    start - Pozycja startowa
+    end - Cel
+    map - Mapa
+  '''
+  self.rocketCount = rocketCount
+  self.size = size
+  self.rocketLifetime = rocketLifetime
+  self.start = start
+  self.end = end
+  self.map = map
+  
+  self.rockets = [Rocket(rocketLifetime, start, end, map, Genes()]
+  self.generation = 0 # Numer generacji (ilość podejść)
+  self.lifeIndex = 0 # Numer genu który przetwarzamy
+  
+```
+Następnie napiszmy dwie proste funkcje, wywoływane co klatkę odpowiedzialne za aktualizowanie i rysowanie populacji:
+
+```python
+def update(self):
+  '''Zaktualizuj wszystkie rakiety. Jeśli ich czas się skończył, stwórz nową populację'''
+  for rocket in self.rockets:
+    rocket.update()
+  self.lifeIndex += 1
+  if self.lifeIndex == self.rocketLifetime:
+    self.nextPopulation()
+    
+def draw(self, window):
+  '''Narysuj rakiety na ekranie'''
+  for rocket in self.rockets:
+    rocket.draw(window)
+```
+
+Na koniec pracy z populacją stwórzmy funkcję `nextPopulation`.
+Jej zadaniem będzie ocenienie obecnej populacji i bazując na doborze naturalnym, stworzenie nowej.
+
+```python
+def nextPopulation(self):
+  '''Dla każdej rakiety ustal szansę na wybranie, a następnie stwórz nową, losową populację.'''
+  
+  # Zaczynamy od policzenia najmniejszego i najmniejszego dopasowania
+  # Dzięki temu możemy znormalizować wyniki, aby znajdowały się między 0 a 1
+  minFitness = maxFitness = self.rocket[0].calculateFitness()
+  for rocket in self.rockets:
+    fitness = rocket.calculateFitness()
+    minFitness = min(minFitness, fitness)
+    maxFitness = max(maxFitness, fitness)
+    
+  # Normalizujemy wyniki i zamieniamy na szansę wyboru przez dodanie rakiety proporcjonalną ilość razy do puli
+  matePool = []
+  for rocket in self.rockets:
+    fitness = rocket.calculateFitness()
+    fitnessNormalized = (fitness - minFitness) / (maxFitness - minFitness + 1) # Dodajemy 1, żeby na pewno nie podzielić przez 0
+    matePool += [rocket] * int(fitnessNormalized * 100)
+    
+  # Resetujemy populacje, losowo wybieramy rodziców, krzyżujemy ich geny i tworzymy nowe rakiety
+  self.rockets = []
+  for i in range(self.rocket_count):
+    rocketA = random.choice(matePool)
+    rocketB = random.choice(matePool)
+    newGenes = rocketA.genes.cross(rocketB.genes)
+    self.rockets.append(Rocket(self.rocketLifetime, self.start, self.end, self.map, newGenes))
+   
+  self.generation += 1
+  self.lifeIndex = 0
+```
+
