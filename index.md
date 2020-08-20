@@ -118,7 +118,7 @@ Po skrzyżowaniu, chcemy zastosować mutację - z pewnym prawdopodobieństwem zm
 
 ```python
 def cross(self, other):
-  new = Genes()
+  new = Genes(self.size)
   #Skrzyżuj dwie pary genomów
   for i in range(self.size):
     new.genes[i] = (self.genes[i] + other.genes[i]) / 2
@@ -130,7 +130,7 @@ def cross(self, other):
 
 Następnie stwórzmy funkcję mutacji:
 ```python
-def mutate(chance, force):
+def mutate(self, chance, force):
   for i in range(self.size):
     if random.random() < chance:  
       self.genes[i] += random.random() * force
@@ -138,8 +138,8 @@ def mutate(chance, force):
 
 Dodajmy zatem zaraz pod dołączeniem bibliotek definicje stałych:
 ```python
-MUTATION_CHANCE = 0.001 #Szansa na mutację genu
-MUTATION_FORCE = 0.01 #Współczynnik zmiany
+MUTATION_CHANCE = 0.05 #Szansa na mutację genu
+MUTATION_FORCE = 0.02 #Współczynnik zmiany
 ```
 
 ### Rakieta
@@ -151,7 +151,7 @@ Potrzebujemy czasu działania, który jest jednocześnie długością genomu.
 Oczywiście, rakieta musi wiedzieć skąd dokąd ma latać, chcemy zatem podać pozycję startową i końcową, a także geny kontrolujące tor lotu.
 Ponadto, aby mierzyć odległość potrzebujemy mapy. 
 Podczas działania będziemy chcieli znać obecny czas, a także obrót oraz wektor reprezentujący zwrot lotu.
-Rakietę będziemy chcieli oceniać, będziemy więc potrzebowali funckji liczącej wynik na podstawie odległości.
+Rakietę będziemy chcieli oceniać, będziemy więc potrzebowali funkcji liczącej wynik na podstawie odległości.
 
 Nasz konstruktor będzie wyglądał zatem tak:
 
@@ -173,9 +173,11 @@ def __init__(self, lifetime, start, end, map, genes):
   self.genes = genes
   
   #Domyślnie rakieta skierowana jest do góry
-  self.forward = [0, -1]
+  self.forward = [0, -ROCKET_FORCE]
   self.rotation = 0 #Kąt w radianach
 ```
+
+Ustawmy stałą `ROCKET_FORCE = 5` na górze programu
 
 Przejdźmy dalej, do zdefiniowania czynności w każdym kroku.
 Na ten moment, chcemy jedynie obrócić rakietę o i-ty kąt, przesunąć się do przodu i przejść do następnego kroku.
@@ -205,10 +207,12 @@ def rotate(self, angle):
   #Używamy tutaj macierzy obrotu
   self.forward[0] = x * math.cos(angle) - y * math.sin(angle)
   self.forward[1] = x * math.sin(angle) + y * math.cos(angle)
-  self.rotaion -= angle #Ponieważ obracamy się przeciwnie do wskazówek zegara, to odejmujemy wartość zmiany
+  self.rotation -= angle #Ponieważ obracamy się przeciwnie do wskazówek zegara, to odejmujemy wartość zmiany
 ```
 
-Aby móc obserwować nasze rakiety i wyświetlić je na ekranie, zdefiniujmy jeszcze funckję `draw`, która na podanym oknie narysuje rakietę.
+Funkcja `rotate` używa biblioteki `math`, którą musimy dołączyć na górze programu
+
+Aby móc obserwować nasze rakiety i wyświetlić je na ekranie, zdefiniujmy jeszcze funkcję `draw`, która na podanym oknie narysuje rakietę.
 
 ```python
 def draw(self, window):
@@ -243,7 +247,7 @@ Na koniec dodajmy prostą funkcję liczącą wynik rakiety
 def calculateFitness(self):
   return 1 / self.map.getDistance(self.position)
 ```
-Chcemy, żeby wynik był większy im bliżej celu rakieta się znajdzie, dlatego używamy funckji 1 / x.
+Chcemy, żeby wynik był większy im bliżej celu rakieta się znajdzie, dlatego używamy funkcji 1 / x.
 
 ### Populacja
 Mając rakietę stwórzmy ich populację.
@@ -267,7 +271,7 @@ def __init__(self, rocketCount, rocketLifetime, start, end, map):
   self.end = end
   self.map = map
   
-  self.rockets = [Rocket(rocketLifetime, start, end, map, Genes()]
+  self.rockets = [Rocket(rocketLifetime, start, end, map, Genes())]
   self.generation = 0 # Numer generacji (ilość podejść)
   self.lifeIndex = 0 # Numer genu który przetwarzamy
   
@@ -298,7 +302,7 @@ def nextPopulation(self):
   
   # Zaczynamy od policzenia najmniejszego i najmniejszego dopasowania
   # Dzięki temu możemy znormalizować wyniki, aby znajdowały się między 0 a 1
-  minFitness = maxFitness = self.rocket[0].calculateFitness()
+  minFitness = maxFitness = self.rockets[0].calculateFitness()
   for rocket in self.rockets:
     fitness = rocket.calculateFitness()
     minFitness = min(minFitness, fitness)
@@ -313,7 +317,7 @@ def nextPopulation(self):
     
   # Resetujemy populacje, losowo wybieramy rodziców, krzyżujemy ich geny i tworzymy nowe rakiety
   self.rockets = []
-  for i in range(self.rocket_count):
+  for _ in range(self.rocketCount):
     rocketA = random.choice(matePool)
     rocketB = random.choice(matePool)
     newGenes = rocketA.genes.cross(rocketB.genes)
@@ -322,4 +326,92 @@ def nextPopulation(self):
   self.generation += 1
   self.lifeIndex = 0
 ```
+
+### Mapa 
+Kolejną rzeczą, której potrzebujemy, jest mapa po której będą się poruszały rakiety
+Aby nie komplikować za bardzo, nasza mapa nie będzie zawierała żadnych przeszkód, a jedynie cel
+Oczywiście potrzebujemy również funkcji `getDistance` używanej do liczenia wyniku rakiety
+
+```python
+def __init__(self, targetPosition):
+  self.targetPosition = targetPosition
+
+def getDistance(self, point):
+  # Odległość liczymy z twierdzenia Pitagorasa
+ return math.sqrt((point[0] - self.targetPosition[0]) ** 2 + (point[1] - self.targetPosition[1]) ** 2) 
+
+def draw(self, window):
+  # Narysuj białe kółko w miejscu celu
+  pygame.draw.circle(window, (255, 255, 255), self.targetPosition, 10)
+```
+
+
+### Aplikacja
+Teraz, gdy mamy już wszystkie elementy, chcemy zebrać je w całość
+
+Aplikacja składa się z okna, populacji, oraz mapy
+```python
+def __init__(self):
+  pygame.init()
+  self.window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+  self.map = Map(TARGET_POSITION)
+  self.population = Population(ROCKET_COUNT, ROCKET_LIFETIME, START_POSITION, TARGET_POSITION, self.map);
+  self.start()
+```
+
+Zapiszmy stałe, których tu używamy, na górze programu
+
+```python
+WINDOW_WIDTH = 640
+WINDOW_HEIGHT = 640
+
+START_POSITION = (320, 600)
+TARGET_POSITION = (320, 50)
+
+ROCKET_COUNT = 100
+ROCKET_LIFETIME = 300
+```
+
+Następnie napiszmy główną pętlę
+```python
+def start(self):
+  self.running = True
+  while self.running:
+    self.processEvents()
+
+    self.map.draw(self.window)
+
+    self.population.update()
+    self.population.draw(self.window)
+    
+    pygame.display.update()
+    time.sleep(0.001)
+```
+`time.sleep(0.001)` wywołujemy aby spowolnić nieco aplikację w celu obserwacji,
+musimy jednak zaimportować bibliotekę `time`
+
+`pygame.display.update()` jest funkcją biblioteki graficznej, która wyświetla narysowane rzeczy
+
+Musimy także napisać funkcję `processEvents` łącząca naszą aplikację z biblioteką
+
+```python
+def processEvents(self):
+  for event in pygame.event.get():
+    if event.type == pygame.QUIT:
+      self.running = False
+```
+
+Mając aplikację, na samym dole piszemy `Application()` aby ją uruchomić.
+Następnie w powłoce systemowej wywołujemy polecenie `python3 [nazwa-pliku]` aby uruchomić program
+
+## Podsumowanie
+Program przeze mnie przedstawiony nie jest zbyt złożony, stanowi raczej przykład metody.
+
+Jego funkcjonalność dałoby się rozszerzyć i skalibrować, np. przez
+- eksperymentację z systemem genów
+- modifykację dziedziczenia
+- rozbudowaniem mapy
+itp.
+
+Mam nadzieję, że udało mi się Czytelnikowi nieco przybliżyć temat algorytmów genetycznych.
 
